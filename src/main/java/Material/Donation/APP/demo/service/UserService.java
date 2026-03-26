@@ -7,4 +7,6 @@ import Material.Donation.APP.demo.entity.User;
 public interface UserService {
     User registerUser(RegisterRequest request);
     User loginUser(LoginRequest request);
+    Object getUserProfile(String email);
+
 }

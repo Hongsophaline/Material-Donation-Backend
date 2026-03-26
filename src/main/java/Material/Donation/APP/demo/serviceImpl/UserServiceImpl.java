@@ -51,4 +51,12 @@ public User loginUser(LoginRequest request) {
 
     return user;
 }
+
+    @Override
+    public Object getUserProfile(String email) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getUserProfile'");
+    }
+
+
 }
