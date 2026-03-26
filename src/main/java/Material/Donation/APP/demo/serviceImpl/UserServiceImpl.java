@@ -1,5 +1,6 @@
 package Material.Donation.APP.demo.serviceImpl;
 
+import Material.Donation.APP.demo.dto.request.LoginRequest;
 import Material.Donation.APP.demo.dto.request.RegisterRequest;
 import Material.Donation.APP.demo.entity.User;
 import Material.Donation.APP.demo.repository.UserRepository;
@@ -18,7 +19,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User registerUser(RegisterRequest request) {
         // 1. Validation: Prevent duplicate accounts
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email is already registered!");
         }
 
@@ -36,4 +37,18 @@ public class UserServiceImpl implements UserService {
         // This returns the saved user containing the generated UUID and CreatedAt timestamp
         return userRepository.save(user);
     }
+
+    @Override
+public User loginUser(LoginRequest request) {
+    // Find user - This will now work because findByEmail returns Optional<User>
+    User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
+
+    // Validate password
+    if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        throw new RuntimeException("Invalid password");
+    }
+
+    return user;
+}
 }
