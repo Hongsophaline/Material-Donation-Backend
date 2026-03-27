@@ -13,6 +13,6 @@ public class UserResponse {
     private String fullName;
     private String phone;
     private String avatarUrl;
-    private String token; // 👈 The JWT goes here
+    private String token;
     private LocalDateTime createdAt;
 }

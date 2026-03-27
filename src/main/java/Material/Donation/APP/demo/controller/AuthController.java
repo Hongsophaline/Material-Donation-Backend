@@ -3,10 +3,14 @@ package Material.Donation.APP.demo.controller;
 import Material.Donation.APP.demo.config.JwtUtils;
 import Material.Donation.APP.demo.dto.request.LoginRequest;
 import Material.Donation.APP.demo.dto.request.RegisterRequest;
+import Material.Donation.APP.demo.dto.request.UpdateProfileRequest;
 import Material.Donation.APP.demo.dto.response.UserResponse;
 import Material.Donation.APP.demo.entity.User;
 import Material.Donation.APP.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
+
+import java.security.Principal;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final UserService userService;
-    private final JwtUtils jwtUtils; // 👈 Fixed: Use the actual class, not Object
+    private final JwtUtils jwtUtils; 
 
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@RequestBody RegisterRequest request) {
@@ -59,5 +63,19 @@ public ResponseEntity<UserResponse> login(@RequestBody LoginRequest request) {
             .build();
 
     return ResponseEntity.ok(response);
+}
+@GetMapping("/me")
+public ResponseEntity<UserResponse> getMyprofile(Principal principal) {
+    return ResponseEntity.ok((UserResponse) userService.getUserProfile(principal.getName()));
+}
+
+@PutMapping("/me")
+public ResponseEntity<UserResponse> updateMyProfile(
+        Principal principal, 
+        @RequestBody UpdateProfileRequest request) {
+    
+    // principal.getName() is the email from the JWT
+    UserResponse updated = userService.updateProfile(principal.getName(), request);
+    return ResponseEntity.ok(updated);
 }
 }

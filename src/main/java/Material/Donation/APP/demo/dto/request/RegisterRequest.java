@@ -6,8 +6,8 @@ import lombok.*;
 @NoArgsConstructor @AllArgsConstructor
 public class RegisterRequest {
     private String email;
+     private String password;
     private String fullName;
-    private String password; // 👈 Must be here
     private String phone;
     private String avatarUrl;
 }
