@@ -98,4 +98,10 @@ public User loginUser(LoginRequest request) {
             .build();
 }
 
+  @Override
+  public User updateUserProfile(String email, UpdateProfileRequest request) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("Unimplemented method 'updateUserProfile'");
+  }
+
 }
