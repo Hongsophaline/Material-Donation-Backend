@@ -9,7 +9,7 @@ public class UpdateDonationRequest {
     private String description;
     private UUID categoryId;
     private String condition;
-    private String status; // e.g., "available", "pending", "collected"
+    private String status;
     private String address;
     private Double latitude;
     private Double longitude;
