@@ -31,10 +31,15 @@ public class SecurityConfig {
             // 1. Set session to STATELESS (required for JWT)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // 2. Specific paths FIRST
-.requestMatchers( "/api/v1/auth/me").authenticated()
-.requestMatchers( "/api/v1/auth/me").authenticated()                // 3. General paths SECOND
+               //authentication endpoints
                 .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                .requestMatchers( "/api/v1/auth/me").authenticated()
+                .requestMatchers( "/api/v1/auth/me").authenticated()
+                
+                //donation endpoints
+                .requestMatchers("/api/v1/donations/**").authenticated()
+
+                //swagger 
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
             )
