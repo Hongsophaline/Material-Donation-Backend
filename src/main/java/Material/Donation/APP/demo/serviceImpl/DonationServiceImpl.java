@@ -22,6 +22,7 @@ public class DonationServiceImpl implements DonationService {
 
     private final DonationRepository donationRepository;
     private final UserRepository userRepository;
+    @SuppressWarnings("unused")
     private final DonationImageRepository DonationImageRepository;
     @Override
     public DonationResponse createDonation(String email, DonationRequest request) {
