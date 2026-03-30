@@ -47,4 +47,13 @@ public ResponseEntity<DonationResponse> update(
         donationService.deleteDonation(id, principal.getName());
         return ResponseEntity.noContent().build();
     }
+   @PostMapping("/{id}/images")
+public ResponseEntity<String> addImage(
+        @PathVariable UUID id, // Matches {id}
+        @RequestParam String imageUrl, // Matches ?imageUrl=...
+        Principal principal) {
+    
+    donationService.addDonationImage(id, principal.getName(), imageUrl);
+    return ResponseEntity.ok("Image added successfully");
+}
 }

@@ -33,6 +33,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                //authentication endpoints
                 .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
+                .requestMatchers("/api/v1/auth/logout").authenticated()
                 .requestMatchers( "/api/v1/auth/me").authenticated()
                 .requestMatchers( "/api/v1/auth/me").authenticated()
                 

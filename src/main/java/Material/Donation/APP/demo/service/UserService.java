@@ -12,4 +12,5 @@ public interface UserService {
     Object getUserProfile(String email);
     User updateUserProfile(String email, UpdateProfileRequest request);
     UserResponse updateProfile(String email, UpdateProfileRequest request);
+    
 }

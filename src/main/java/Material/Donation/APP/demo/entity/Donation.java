@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -21,6 +22,8 @@ public class Donation {
     @JoinColumn(name = "donor_id", nullable = false)
     private User donor;
 
+    @OneToMany(mappedBy = "donation", cascade = CascadeType.ALL, orphanRemoval = true)
+private List<DonationImage> images;
     @Column(nullable = false)
     private String title;
 

@@ -4,13 +4,14 @@ import Material.Donation.APP.demo.dto.request.DonationRequest;
 import Material.Donation.APP.demo.dto.request.UpdateDonationRequest;
 import Material.Donation.APP.demo.dto.response.DonationResponse;
 import Material.Donation.APP.demo.entity.Donation;
+import Material.Donation.APP.demo.entity.DonationImage;
 import Material.Donation.APP.demo.entity.User;
 import Material.Donation.APP.demo.repository.DonationRepository;
 import Material.Donation.APP.demo.repository.UserRepository;
 import Material.Donation.APP.demo.service.DonationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import Material.Donation.APP.demo.repository.DonationImageRepository;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -21,7 +22,7 @@ public class DonationServiceImpl implements DonationService {
 
     private final DonationRepository donationRepository;
     private final UserRepository userRepository;
-
+    private final DonationImageRepository DonationImageRepository;
     @Override
     public DonationResponse createDonation(String email, DonationRequest request) {
         User user = userRepository.findByEmail(email)
@@ -112,5 +113,28 @@ public void deleteDonation(UUID donationId, String email) {
 
     // 3. Delete the donation
     donationRepository.delete(donation);
+}
+// Make sure you have this repository injected at the top
+private final DonationImageRepository donationImageRepository;
+
+@Override
+public void addDonationImage(UUID donationId, String email, String imageUrl) {
+    // 1. Find the donation
+    Donation donation = donationRepository.findById(donationId)
+            .orElseThrow(() -> new RuntimeException("Donation not found"));
+
+    // 2. Permission Check
+    if (!donation.getDonor().getEmail().equalsIgnoreCase(email)) {
+        throw new RuntimeException("You do not have permission to add images to this donation");
+    }
+
+    // 3. Create and Save Image
+    DonationImage img = DonationImage.builder()
+            .donation(donation)
+            .imageUrl(imageUrl)
+            .sortOrder(0)
+            .build();
+
+    donationImageRepository.save(img);
 }
 }
