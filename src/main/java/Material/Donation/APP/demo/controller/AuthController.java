@@ -3,7 +3,6 @@ package Material.Donation.APP.demo.controller;
 import Material.Donation.APP.demo.config.JwtUtils;
 import Material.Donation.APP.demo.dto.request.LoginRequest;
 import Material.Donation.APP.demo.dto.request.RegisterRequest;
-import Material.Donation.APP.demo.dto.request.UpdateProfileRequest;
 import Material.Donation.APP.demo.dto.response.UserResponse;
 import Material.Donation.APP.demo.entity.User;
 import Material.Donation.APP.demo.service.UserService;
@@ -68,7 +67,7 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/me")
+    @GetMapping("/profile")
     public ResponseEntity<Object> getMyProfile(Principal principal) {
         // Removed the unnecessary cast (UserResponse) if your service already returns it
         return ResponseEntity.ok(userService.getUserProfile(principal.getName()));
