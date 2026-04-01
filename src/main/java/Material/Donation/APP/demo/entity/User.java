@@ -3,15 +3,19 @@ package Material.Donation.APP.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "users")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -19,18 +23,18 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(name = "full_name")
-    private String fullName;
-
     @Column(nullable = false)
     private String password;
 
+    private String fullName;
     private String phone;
-
-    @Column(name = "avatar_url")
     private String avatarUrl;
+    private String status; // pending, approved, rejected
+
+    // New Fields
+    private String userType; // INDIVIDUAL, ORGANIZATION
+    private LocalDate dob;
 
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 }

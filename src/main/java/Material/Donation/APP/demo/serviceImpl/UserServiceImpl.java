@@ -20,89 +20,71 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User registerUser(RegisterRequest request) {
-        // 1. Validation: Prevent duplicate accounts
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email is already registered!");
+        String identifier;
+
+        // 1. Logic for INDIVIDUAL (No Email)
+        if ("INDIVIDUAL".equalsIgnoreCase(request.getUserType())) {
+            if (request.getDob() == null) {
+                throw new RuntimeException("Date of Birth is required for Individuals.");
+            }
+            if (request.getPhone() == null || request.getPhone().isBlank()) {
+                throw new RuntimeException("Phone Number is required for Individuals.");
+            }
+            // Use phone as the unique identifier since email is missing
+            identifier = request.getPhone(); 
+        } 
+        
+        // 2. Logic for ORGANIZATION (Has Email)
+        else if ("ORGANIZATION".equalsIgnoreCase(request.getUserType())) {
+            if (request.getEmail() == null || request.getEmail().isBlank()) {
+                throw new RuntimeException("Organization Email is required.");
+            }
+            identifier = request.getEmail();
+            request.setDob(null); // Organizations don't have a DOB
+        } else {
+            throw new RuntimeException("Invalid User Type.");
         }
 
-        // 2. Build the User Entity
-        // We use the PasswordEncoder here to hash the password before it hits the DB
+        // 3. Check if this user already exists
+        if (userRepository.findByEmail(identifier).isPresent()) {
+            throw new RuntimeException("This account (Email/Phone) is already registered!");
+        }
+
+        // 4. Build and Save
         User user = User.builder()
-                .email(request.getEmail())
+                .email(identifier) // Storing either Email or Phone here
                 .fullName(request.getFullName())
                 .phone(request.getPhone())
-                .avatarUrl(request.getAvatarUrl())
+                .userType(request.getUserType().toUpperCase())
+                .dob(request.getDob())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .status("approved")
                 .build();
 
-        // 3. Persist and return
-        // This returns the saved user containing the generated UUID and CreatedAt timestamp
         return userRepository.save(user);
     }
 
     @Override
-public User loginUser(LoginRequest request) {
-    // Find user - This will now work because findByEmail returns Optional<User>
-    User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
-
-    // Validate password
-    if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-        throw new RuntimeException("Invalid password");
+    public User loginUser(LoginRequest request) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'loginUser'");
     }
 
-    return user;
-}
+    @Override
+    public Object getUserProfile(String email) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getUserProfile'");
+    }
 
-    // @Override
-    // public Object getUserProfile(String email) {
-    //     // TODO Auto-generated method stub
-    //     throw new UnsupportedOperationException("Unimplemented method 'getUserProfile'");
-    // }
- @Override
- public UserResponse getUserProfile(String email){
-    User user = userRepository.findByEmail(email)
-    .orElseThrow(() -> new RuntimeException("User not found"));
+    @Override
+    public User updateUserProfile(String email, UpdateProfileRequest request) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'updateUserProfile'");
+    }
 
-    return UserResponse.builder()
-            .id(user.getId())
-            .email(user.getEmail())
-            .fullName(user.getFullName())
-            .phone(user.getPhone())
-            .avatarUrl(user.getAvatarUrl())
-            .createdAt(user.getCreatedAt())
-            .build();
-    
- }
-  public UserResponse updateProfile(String email, UpdateProfileRequest request) {
-    // 1. Find the existing user
-    User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-
-    // 2. Update fields if they are provided in the request
-    if (request.getFullName() != null) user.setFullName(request.getFullName());
-    if (request.getPhone() != null) user.setPhone(request.getPhone());
-    if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
-
-    // 3. Save to Database
-    User updatedUser = userRepository.save(user);
-
-    // 4. Return the updated response
-    return UserResponse.builder()
-            .id(updatedUser.getId())
-            .email(updatedUser.getEmail())
-            .fullName(updatedUser.getFullName())
-            .phone(updatedUser.getPhone())
-            .avatarUrl(updatedUser.getAvatarUrl())
-            .createdAt(updatedUser.getCreatedAt())
-            .build();
-}
-
-  @Override
-  public User updateUserProfile(String email, UpdateProfileRequest request) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'updateUserProfile'");
-  }
-  
-
+    @Override
+    public UserResponse updateProfile(String email, UpdateProfileRequest request) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'updateProfile'");
+    }
 }
