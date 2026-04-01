@@ -3,6 +3,7 @@ package Material.Donation.APP.demo.serviceImpl;
 import Material.Donation.APP.demo.dto.request.DonationRequest;
 import Material.Donation.APP.demo.dto.request.UpdateDonationRequest;
 import Material.Donation.APP.demo.dto.response.DonationResponse;
+import Material.Donation.APP.demo.entity.Category;
 import Material.Donation.APP.demo.entity.Donation;
 import Material.Donation.APP.demo.entity.DonationImage;
 import Material.Donation.APP.demo.entity.User;
@@ -12,6 +13,7 @@ import Material.Donation.APP.demo.service.DonationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import Material.Donation.APP.demo.repository.DonationImageRepository;
+import Material.Donation.APP.demo.repository.CategoryRepository;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -24,16 +26,20 @@ public class DonationServiceImpl implements DonationService {
     private final UserRepository userRepository;
     @SuppressWarnings("unused")
     private final DonationImageRepository DonationImageRepository;
+    private final CategoryRepository categoryRepository;
     @Override
     public DonationResponse createDonation(String email, DonationRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+
         Donation donation = Donation.builder()
                 .donor(user)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .categoryId(request.getCategoryId())
+                .category(category)
                 .condition(request.getCondition())
                 .address(request.getAddress())
                 .latitude(request.getLatitude())
@@ -66,7 +72,7 @@ public class DonationServiceImpl implements DonationService {
                 .id(donation.getId())
                 .title(donation.getTitle())
                 .description(donation.getDescription())
-                .categoryId(donation.getCategoryId())
+                .categoryId(donation.getCategory().getId())
                 .condition(donation.getCondition())
                 .status(donation.getStatus())
                 .address(donation.getAddress())
@@ -91,7 +97,11 @@ public DonationResponse updateDonation(UUID donationId, String email, UpdateDona
     // 3. Update fields if provided
     if (request.getTitle() != null) donation.setTitle(request.getTitle());
     if (request.getDescription() != null) donation.setDescription(request.getDescription());
-    if (request.getCategoryId() != null) donation.setCategoryId(request.getCategoryId());
+    if (request.getCategoryId() != null) {
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+        donation.setCategory(category);
+    }
     if (request.getCondition() != null) donation.setCondition(request.getCondition());
     if (request.getStatus() != null) donation.setStatus(request.getStatus());
     if (request.getAddress() != null) donation.setAddress(request.getAddress());
@@ -137,5 +147,15 @@ public void addDonationImage(UUID donationId, String email, String imageUrl) {
             .build();
 
     donationImageRepository.save(img);
+}
+@Override
+public List<DonationResponse> searchDonations(String keyword, UUID categoryId) {
+    // If keyword is empty string, treat it as null for the query
+    String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword : null;
+    
+    return donationRepository.searchDonations(searchKeyword, categoryId)
+            .stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
 }
 }
