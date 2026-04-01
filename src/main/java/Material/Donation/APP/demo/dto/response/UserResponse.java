@@ -1,6 +1,8 @@
 package Material.Donation.APP.demo.dto.response;
 
 import lombok.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -13,6 +15,7 @@ public class UserResponse {
     private String fullName;
     private String phone;
     private String avatarUrl;
+    private LocalDate dob;
     private String token;
     private LocalDateTime createdAt;
 }

@@ -1,3 +1,4 @@
+
 package Material.Donation.APP.demo.dto.request;
 
 import lombok.Data;
@@ -9,12 +10,7 @@ public class RegisterRequest {
     private String phone;
     private String password;
     private String userType; // "INDIVIDUAL" or "ORGANIZATION"
-    
-    // Optional depending on type
     private String email; 
     private LocalDate dob;
-    public String getAvatarUrl() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getAvatarUrl'");
-    }
+    private String avatarUrl;
 }

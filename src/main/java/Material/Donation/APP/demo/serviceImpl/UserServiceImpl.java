@@ -10,6 +10,7 @@ import Material.Donation.APP.demo.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,44 +20,36 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public User registerUser(RegisterRequest request) {
         String identifier;
 
-        // 1. Logic for INDIVIDUAL (No Email)
+        // 1. Differentiate between Individual and Organization
         if ("INDIVIDUAL".equalsIgnoreCase(request.getUserType())) {
-            if (request.getDob() == null) {
-                throw new RuntimeException("Date of Birth is required for Individuals.");
-            }
-            if (request.getPhone() == null || request.getPhone().isBlank()) {
-                throw new RuntimeException("Phone Number is required for Individuals.");
-            }
-            // Use phone as the unique identifier since email is missing
+            if (request.getDob() == null) throw new RuntimeException("Date of Birth is required for Individuals.");
+            if (request.getPhone() == null) throw new RuntimeException("Phone Number is required.");
             identifier = request.getPhone(); 
-        } 
-        
-        // 2. Logic for ORGANIZATION (Has Email)
-        else if ("ORGANIZATION".equalsIgnoreCase(request.getUserType())) {
-            if (request.getEmail() == null || request.getEmail().isBlank()) {
-                throw new RuntimeException("Organization Email is required.");
-            }
+        } else if ("ORGANIZATION".equalsIgnoreCase(request.getUserType())) {
+            if (request.getEmail() == null) throw new RuntimeException("Organization Email is required.");
             identifier = request.getEmail();
-            request.setDob(null); // Organizations don't have a DOB
+            request.setDob(null); // Orgs don't have a birthday
         } else {
             throw new RuntimeException("Invalid User Type.");
         }
 
-        // 3. Check if this user already exists
+        // 2. Duplicate check
         if (userRepository.findByEmail(identifier).isPresent()) {
-            throw new RuntimeException("This account (Email/Phone) is already registered!");
+            throw new RuntimeException("This account is already registered!");
         }
 
-        // 4. Build and Save
+        // 3. Save Entity
         User user = User.builder()
-                .email(identifier) // Storing either Email or Phone here
+                .email(identifier) 
                 .fullName(request.getFullName())
                 .phone(request.getPhone())
                 .userType(request.getUserType().toUpperCase())
                 .dob(request.getDob())
+                .avatarUrl(request.getAvatarUrl())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .status("approved")
                 .build();
@@ -66,25 +59,71 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User loginUser(LoginRequest request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'loginUser'");
+        // Use phone as the identifier for the login search
+        return userRepository.findByEmail(request.getPhone())
+                .orElseThrow(() -> new RuntimeException("User not found."));
     }
 
     @Override
-    public Object getUserProfile(String email) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getUserProfile'");
+    public UserResponse getUserProfile(String identifier) {
+        User user = userRepository.findByEmail(identifier)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return mapToResponse(user, null);
     }
 
     @Override
-    public User updateUserProfile(String email, UpdateProfileRequest request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'updateUserProfile'");
+    @Transactional
+    public UserResponse updateProfile(String identifier, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(identifier)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
+
+        User updatedUser = userRepository.save(user);
+        return mapToResponse(updatedUser, null);
     }
 
     @Override
-    public UserResponse updateProfile(String email, UpdateProfileRequest request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'updateProfile'");
+    @Transactional
+    public User updateUserProfile(String identifier, UpdateProfileRequest request) {
+        User user = userRepository.findByEmail(identifier)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getAvatarUrl() != null) user.setAvatarUrl(request.getAvatarUrl());
+
+        return userRepository.save(user);
+    }
+
+    /**
+     * Unified Helper to convert Entity to Response DTO
+     * Handles the 'dob' mapping and 'email vs phone' display logic
+     */
+    public UserResponse mapToResponse(User user, String token) {
+        // Hide the phone number if it's stored in the email column (for Individuals)
+        String displayEmail = (user.getEmail() != null && user.getEmail().contains("@")) 
+                              ? user.getEmail() : null;
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .email(displayEmail) 
+                .fullName(user.getFullName())
+                .phone(user.getPhone())
+                .avatarUrl(user.getAvatarUrl())
+                .dob(user.getDob()) // Added dob to response
+                .token(token)
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
+
+    //logout
+    @Override
+    public void logout (String identifier) {
+        // Since JWT is stateless, we don't need to do anything server-side for logout.
+        // The client should simply delete the token on their end.
+        System.out.println("User " + identifier + " logged out.");
     }
 }
