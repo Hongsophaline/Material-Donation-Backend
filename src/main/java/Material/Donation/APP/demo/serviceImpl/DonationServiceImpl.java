@@ -138,4 +138,14 @@ public void addDonationImage(UUID donationId, String email, String imageUrl) {
 
     donationImageRepository.save(img);
 }
+@Override
+public List<DonationResponse> searchDonations(String keyword, UUID categoryId) {
+    // If keyword is empty string, treat it as null for the query
+    String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword : null;
+    
+    return donationRepository.searchDonations(searchKeyword, categoryId)
+            .stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+}
 }

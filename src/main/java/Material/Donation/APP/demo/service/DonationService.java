@@ -16,4 +16,5 @@ public interface DonationService {
 DonationResponse updateDonation(UUID donationId, String email, UpdateDonationRequest request);
 void deleteDonation(UUID donationId, String email);
 void addDonationImage(UUID donationId, String email, String imageUrl);
+List<DonationResponse> searchDonations(String keyword, UUID categoryId);
 }
