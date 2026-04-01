@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import Material.Donation.APP.demo.dto.request.CreateRequest;
 import Material.Donation.APP.demo.dto.response.RequestResponse;
 import Material.Donation.APP.demo.entity.*;
+import Material.Donation.APP.demo.entity.User;
 import Material.Donation.APP.demo.repository.*;
 import Material.Donation.APP.demo.service.DonationRequestService;
 import lombok.RequiredArgsConstructor;
