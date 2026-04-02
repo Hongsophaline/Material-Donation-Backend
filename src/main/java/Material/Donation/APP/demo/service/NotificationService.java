@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface NotificationService {
-    // 5 parameters to match RequestService calls
     void createNotification(UUID userId, String role, String type, String title, String message);
     
     List<Notification> getMyNotifications(UUID userId);

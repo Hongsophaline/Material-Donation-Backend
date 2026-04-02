@@ -49,8 +49,8 @@ public ResponseEntity<DonationResponse> update(
     }
    @PostMapping("/{id}/images")
 public ResponseEntity<String> addImage(
-        @PathVariable UUID id, // Matches {id}
-        @RequestParam String imageUrl, // Matches ?imageUrl=...
+        @PathVariable UUID id, 
+        @RequestParam String imageUrl, 
         Principal principal) {
     
     donationService.addDonationImage(id, principal.getName(), imageUrl);
