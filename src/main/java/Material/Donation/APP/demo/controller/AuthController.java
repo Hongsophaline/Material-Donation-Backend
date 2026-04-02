@@ -4,6 +4,7 @@ import Material.Donation.APP.demo.config.JwtUtils;
 import Material.Donation.APP.demo.dto.request.LoginRequest;
 import Material.Donation.APP.demo.dto.request.RegisterRequest;
 import Material.Donation.APP.demo.dto.request.UpdateProfileRequest;
+import Material.Donation.APP.demo.dto.response.LoginResponse;
 import Material.Donation.APP.demo.dto.response.UserResponse;
 import Material.Donation.APP.demo.entity.User;
 import Material.Donation.APP.demo.serviceImpl.UserServiceImpl;
@@ -33,11 +34,11 @@ public ResponseEntity<UserResponse> register(@RequestBody RegisterRequest reques
     return ResponseEntity.ok(userService.mapToResponse(user, token));
 }
 
-    @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
-        userService.loginUser(request);
-        return ResponseEntity.ok("OTP has been sent to " + request.getPhone());
-    }
+@PostMapping("/login")
+public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    // This calls the service we just fixed and returns the JSON with the token
+    return ResponseEntity.ok(userService.loginUser(request));
+}
     // --- PROFILE ENDPOINTS ---
 
     @GetMapping("/profile")

@@ -7,15 +7,20 @@ import java.util.UUID;
 
 @Data
 @Builder
-@NoArgsConstructor 
+@NoArgsConstructor
 @AllArgsConstructor
-public class UserResponse {
-    private UUID id;
-    private String email;
+public class LoginResponse {
+    private String token;
+    @Builder.Default
+    private String type = "Bearer";
+    private String message;
+
+    // Add these fields so the builder works
+    private UUID userId; 
     private String fullName;
+    private String email;
     private String phone;
     private String avatarUrl;
     private LocalDate dob;
-    private String token;
     private LocalDateTime createdAt;
 }

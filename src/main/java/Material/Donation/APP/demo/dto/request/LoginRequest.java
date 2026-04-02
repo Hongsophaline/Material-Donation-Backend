@@ -1,10 +1,9 @@
 package Material.Donation.APP.demo.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
-@Data
+@Data // This automatically creates getPassword() for you
 public class LoginRequest {
-    @NotBlank(message = "Phone number is required")
     private String phone;
+    private String password;
 }
