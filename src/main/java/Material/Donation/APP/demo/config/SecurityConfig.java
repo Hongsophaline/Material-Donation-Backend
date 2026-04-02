@@ -28,25 +28,32 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            // 1. Set session to STATELESS (required for JWT)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-               //authentication endpoints
-                .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register").permitAll()
-                .requestMatchers("/api/v1/auth/logout").authenticated()
-                .requestMatchers( "/api/v1/auth/me").authenticated()
-                .requestMatchers( "/api/v1/auth/me").authenticated()
-                
-                //donation endpoints
-                .requestMatchers("/api/v1/donations/**").authenticated()
+                // Public endpoints (no auth)
+                .requestMatchers(
+                    "/api/v1/auth/login",
+                    "/api/v1/auth/register",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html"
+                ).permitAll()
 
-                //swagger 
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // Endpoints that require authentication
+                .requestMatchers(
+                    "/api/v1/auth/logout",
+                    "/api/v1/auth/me",
+                    "/api/v1/donations/**"
+                ).authenticated()
+
+                // Review endpoints (can test in Swagger without auth)
+                .requestMatchers("/api/v1/reviews/**").permitAll()
+
+                // Any other request requires auth
                 .anyRequest().authenticated()
             )
-            // 4. ADD THE FILTER HERE! 
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         return http.build();
     }
 }

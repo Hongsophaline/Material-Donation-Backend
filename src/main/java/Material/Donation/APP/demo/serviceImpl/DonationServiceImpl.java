@@ -67,22 +67,25 @@ public class DonationServiceImpl implements DonationService {
                 .collect(Collectors.toList());
     }
 
-    private DonationResponse mapToResponse(Donation donation) {
-        return DonationResponse.builder()
-                .id(donation.getId())
-                .title(donation.getTitle())
-                .description(donation.getDescription())
-                .categoryId(donation.getCategory().getId())
-                .condition(donation.getCondition())
-                .status(donation.getStatus())
-                .address(donation.getAddress())
-                .latitude(donation.getLatitude())
-                .longitude(donation.getLongitude())
-                .donorName(donation.getDonor().getFullName())
-                .donorEmail(donation.getDonor().getEmail())
-                .createdAt(donation.getCreatedAt())
-                .build();
-    }
+  private DonationResponse mapToResponse(Donation donation) {
+    return DonationResponse.builder()
+            .id(donation.getId())
+            .title(donation.getTitle())
+            .description(donation.getDescription())
+            // Use a null check to prevent the app from crashing on old data
+            .categoryId(donation.getCategory() != null ? donation.getCategory().getId() : null)
+            .condition(donation.getCondition())
+            .status(donation.getStatus())
+            .address(donation.getAddress())
+            .latitude(donation.getLatitude())
+            .longitude(donation.getLongitude())
+            // Add null check for donor as well just in case
+            .donorName(donation.getDonor() != null ? donation.getDonor().getFullName() : "Unknown")
+            .donorEmail(donation.getDonor() != null ? donation.getDonor().getEmail() : "Unknown")
+            .createdAt(donation.getCreatedAt())
+            .build();
+}
+
    @Override
 public DonationResponse updateDonation(UUID donationId, String email, UpdateDonationRequest request) {
     // 1. Find the donation
