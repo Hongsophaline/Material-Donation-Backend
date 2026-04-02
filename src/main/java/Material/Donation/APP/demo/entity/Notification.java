@@ -1,37 +1,47 @@
 package Material.Donation.APP.demo.entity;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "notifications")
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Notification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private String type; // e.g., "donation_request", "donation_approved"
-    private String title;
-    private String message;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    private boolean isRead;
-
-    // Role of the notification recipient: "REQUESTER" or "DONOR"
+    @Column(name = "recipient_type")
     private String recipientType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;  // links to the user who receives the notification
+    private String type;
+    private String title;
+    
+    @Column(columnDefinition = "TEXT")
+    private String message;
+
+    @Builder.Default
+    @Column(name = "read", nullable = false) 
+    private boolean isRead = false;
 
     @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    // Helper to ensure 'setRead' works regardless of Lombok naming
+    public void setRead(boolean read) {
+        this.isRead = read;
+    }
 }

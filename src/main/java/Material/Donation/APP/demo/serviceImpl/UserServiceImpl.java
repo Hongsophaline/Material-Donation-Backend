@@ -139,4 +139,5 @@ public LoginResponse loginUser(LoginRequest request) {
     public void logout(String identifier) {
         System.out.println("User " + identifier + " logged out.");
     }
+    
 }
