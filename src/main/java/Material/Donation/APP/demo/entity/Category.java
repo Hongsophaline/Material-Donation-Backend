@@ -18,9 +18,8 @@ public class Category {
     @GeneratedValue
     private UUID id;
 
-    private String name; // e.g., Clothing, Furniture, Books
-
-    // Optional: list of donations in this category
+    private String name;
+   
     @OneToMany(mappedBy = "category")
     private List<Donation> donations;
 }
