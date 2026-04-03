@@ -1,39 +1,28 @@
-services:
-  app:
-    build: .
-    ports:
-      - "8081:8081"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/demodb
-      SPRING_DATASOURCE_USERNAME: ${DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - app-network
+# ---------- Build Stage ----------
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: demodb
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+WORKDIR /app
 
-volumes:
-  postgres_data:
+# Cache dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline
 
-networks:
-  app-network:
+# Copy source
+COPY src ./src
+
+# Build
+RUN mvn clean package -DskipTests
+
+
+# ---------- Run Stage ----------
+FROM eclipse-temurin:21-jdk
+
+WORKDIR /app
+
+# Copy jar from builder
+COPY --from=builder /app/target/*.jar app.jar
+
+EXPOSE 8081
+
+# Run application
+ENTRYPOINT ["java","-XX:+UseContainerSupport","-XX:MaxRAMPercentage=75.0","-jar","app.jar"]
