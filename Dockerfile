@@ -1,23 +1,39 @@
-# Use stable Java 21 image
-FROM eclipse-temurin:21-jdk
+services:
+  app:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/demodb
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
 
-# Set working directory
-WORKDIR /app
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: demodb
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-# Copy project files
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-COPY src ./src
+volumes:
+  postgres_data:
 
-# Make mvnw executable
-RUN chmod +x mvnw
-
-# Build the app
-RUN ./mvnw clean package -DskipTests
-
-# Expose port
-EXPOSE 8081
-
-# Run the app
-ENTRYPOINT ["java","-jar","target/demo-0.0.1-SNAPSHOT.jar"]
+networks:
+  app-network:
