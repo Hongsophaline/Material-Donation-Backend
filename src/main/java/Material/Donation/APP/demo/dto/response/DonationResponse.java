@@ -10,16 +10,13 @@ import java.util.UUID;
 @Builder
 public class DonationResponse {
     private UUID id;
-    private List<String> imageUrls;
     private String title;
     private String description;
     private UUID categoryId;
     private String condition;
     private String status;
     private String address;
-    private Double latitude;
-    private Double longitude;
     private String donorName;
-    private String donorEmail;
+    private List<String> imageUrls; // <--- Add this
     private LocalDateTime createdAt;
 }
