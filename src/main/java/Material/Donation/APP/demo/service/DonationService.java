@@ -13,4 +13,6 @@ public interface DonationService {
     List<DonationResponse> getDonationsByUser(String email);
     DonationResponse updateDonation(UUID id, String email, UpdateDonationRequest request);
     void deleteDonation(UUID id, String email);
+    Object searchDonations(String keyword, UUID categoryId);
+    void addDonationImage(UUID id, String name, String imageUrl);
 }
