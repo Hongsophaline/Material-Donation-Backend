@@ -1,23 +1,28 @@
-# Use stable Java 21 image
-FROM eclipse-temurin:21-jdk
+# ---------- Build Stage ----------
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy project files
-COPY mvnw .
-COPY .mvn .mvn
+# Cache dependencies
 COPY pom.xml .
+RUN mvn dependency:go-offline
+
+# Copy source
 COPY src ./src
 
-# Make mvnw executable
-RUN chmod +x mvnw
+# Build
+RUN mvn clean package -DskipTests
 
-# Build the app
-RUN ./mvnw clean package -DskipTests
 
-# Expose port
+# ---------- Run Stage ----------
+FROM eclipse-temurin:21-jdk
+
+WORKDIR /app
+
+# Copy jar from builder
+COPY --from=builder /app/target/*.jar app.jar
+
 EXPOSE 8081
 
-# Run the app
-ENTRYPOINT ["java","-jar","target/demo-0.0.1-SNAPSHOT.jar"]
+# Run application
+ENTRYPOINT ["java","-XX:+UseContainerSupport","-XX:MaxRAMPercentage=75.0","-jar","app.jar"]
