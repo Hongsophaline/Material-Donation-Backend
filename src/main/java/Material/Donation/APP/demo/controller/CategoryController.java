@@ -26,6 +26,12 @@ public class CategoryController {
         return categoryService.getAll();
     }
 
+    // --- ADD THIS METHOD ---
+    @GetMapping("/{id}")
+    public CategoryResponse getById(@PathVariable UUID id) {
+        return categoryService.getById(id);
+    }
+
     @PutMapping("/{id}")
     public CategoryResponse update(@PathVariable UUID id, @RequestBody CategoryRequest request) {
         return categoryService.update(id, request);
