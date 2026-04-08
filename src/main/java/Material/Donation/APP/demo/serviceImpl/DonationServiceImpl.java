@@ -66,26 +66,25 @@ public class DonationServiceImpl implements DonationService {
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
-
-  private DonationResponse mapToResponse(Donation donation) {
+private DonationResponse mapToResponse(Donation donation) {
     return DonationResponse.builder()
             .id(donation.getId())
             .title(donation.getTitle())
             .description(donation.getDescription())
-            // Use a null check to prevent the app from crashing on old data
             .categoryId(donation.getCategory() != null ? donation.getCategory().getId() : null)
             .condition(donation.getCondition())
             .status(donation.getStatus())
             .address(donation.getAddress())
-            .latitude(donation.getLatitude())
-            .longitude(donation.getLongitude())
-            // Add null check for donor as well just in case
             .donorName(donation.getDonor() != null ? donation.getDonor().getFullName() : "Unknown")
-            .donorEmail(donation.getDonor() != null ? donation.getDonor().getEmail() : "Unknown")
+            // Add this line to include the URLs in the response
+            .imageUrls(donation.getImages() != null ? 
+                donation.getImages().stream()
+                    .map(img -> img.getImageUrl())
+                    .collect(Collectors.toList()) 
+                : List.of())
             .createdAt(donation.getCreatedAt())
             .build();
 }
-
    @Override
 public DonationResponse updateDonation(UUID donationId, String email, UpdateDonationRequest request) {
     // 1. Find the donation
