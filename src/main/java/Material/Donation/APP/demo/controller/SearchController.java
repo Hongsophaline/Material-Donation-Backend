@@ -17,7 +17,7 @@ public class SearchController {
     private final DonationService donationService;
 
     @GetMapping
-    public ResponseEntity<List<DonationResponse>> search(
+    public ResponseEntity<Object> search(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UUID categoryId) {
         
