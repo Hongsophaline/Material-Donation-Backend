@@ -35,6 +35,14 @@ public class CategoryServiceImpl implements CategoryService {
                 .collect(Collectors.toList());
     }
 
+    // --- ADD THIS METHOD ---
+    @Override
+    public CategoryResponse getById(UUID id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Category with ID " + id + " not found"));
+        return mapToResponse(category);
+    }
+
     @Override
     public CategoryResponse update(UUID id, CategoryRequest request) {
         Category category = categoryRepository.findById(id)
@@ -47,6 +55,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void delete(UUID id) {
+        // Good practice: check if it exists before deleting to avoid silent failures
+        if (!categoryRepository.existsById(id)) {
+            throw new RuntimeException("Cannot delete: Category not found");
+        }
         categoryRepository.deleteById(id);
     }
 
