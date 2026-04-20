@@ -15,7 +15,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -45,27 +44,30 @@ public class SecurityConfig {
                     "/swagger-ui.html"
                 ).permitAll()
                 
-                // Allow anyone to view categories
-                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
+                // Allow anyone to view categories (GET only)
+                // Note: Added both /api/categories and /api/categories/** to cover all bases
+                .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/categories", "/api/v1/categories/**").permitAll()
                 
-                // FIXED: Allow public to VIEW donations (GET), but keep other methods (POST/PUT/DELETE) protected
+                // Allow public to VIEW donations and search
                 .requestMatchers(HttpMethod.GET, "/api/v1/donations/**").permitAll()
-                
-                // Reviews public access
-                .requestMatchers("/api/v1/reviews/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
 
                 // 2. PROTECTED ENDPOINTS
-                // User-specific actions and creating/editing donations
+                // Require authentication for modifications to categories
+                .requestMatchers(HttpMethod.POST, "/api/categories/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/categories/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/categories/**").authenticated()
+                
+                // Authenticated user actions
                 .requestMatchers(
                     "/api/v1/auth/logout",
-                    "/api/v1/auth/me"
+                    "/api/v1/auth/profile",
+                    "/api/v1/requests/**",
+                    "/api/v1/pickups/**",
+                    "/api/v1/notifications/**"
                 ).authenticated()
-                
-                // POST, PUT, and DELETE for donations now require a token
-                .requestMatchers(HttpMethod.POST, "/api/v1/donations/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/v1/donations/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/v1/donations/**").authenticated()
 
                 .anyRequest().authenticated()
             )
@@ -78,17 +80,13 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOriginPattern("*"); 
+        config.addAllowedOriginPattern("*"); // In production, replace with your frontend URL
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Applies CORS to all endpoints
         source.registerCorsConfiguration("/**", config);
         return source;
-    }
-
-    @Bean
-    public CorsFilter corsFilter() {
-        return new CorsFilter(corsConfigurationSource());
     }
 }
