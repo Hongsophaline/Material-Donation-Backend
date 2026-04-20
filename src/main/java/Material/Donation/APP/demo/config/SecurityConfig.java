@@ -35,7 +35,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // 1. PUBLIC ENDPOINTS
+                // 1. PUBLIC AUTH & SWAGGER
                 .requestMatchers(
                     "/api/v1/auth/login",
                     "/api/v1/auth/register",
@@ -44,21 +44,26 @@ public class SecurityConfig {
                     "/swagger-ui.html"
                 ).permitAll()
                 
-                // Allow anyone to view categories (GET only)
-                // Note: Added both /api/categories and /api/categories/** to cover all bases
-                // .requestMatchers( "/api/categories", "/api/categories/**").permitAll()
-                // .requestMatchers( "/api/v1/categories", "/api/v1/categories/**").permitAll()
+                // 2. PUBLIC CATEGORIES (GET only)
+                // We permit both the base list and specific IDs
+                .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 
-                // Allow public to VIEW donations and search
-                .requestMatchers( "/api/v1/donations/**").permitAll()
-                .requestMatchers( "/api/v1/search/**").permitAll()
-                .requestMatchers( "/api/v1/reviews/**").permitAll()
+                // 3. PUBLIC DONATIONS (GET only)
+                // This allows the Browse page to see the list and search
+                .requestMatchers(HttpMethod.GET, "/api/v1/donations").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/donations/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
 
-                // 2. PROTECTED ENDPOINTS
-                // Require authentication for modifications to categories
-.requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll() // ADD THIS
-                .requestMatchers(HttpMethod.POST, "/api/categories/**").authenticated()                
-                // Authenticated user actions
+                // 4. PROTECTED ENDPOINTS
+                // Require authentication for CREATING/EDITING categories or donations
+                .requestMatchers(HttpMethod.POST, "/api/categories/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/donations/**").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/v1/donations/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/donations/**").authenticated()
+                
+                // Authenticated user system actions
                 .requestMatchers(
                     "/api/v1/auth/logout",
                     "/api/v1/auth/profile",
@@ -67,6 +72,7 @@ public class SecurityConfig {
                     "/api/v1/notifications/**"
                 ).authenticated()
 
+                // Catch-all
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -78,12 +84,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOriginPattern("*"); // In production, replace with your frontend URL
+        // Allows the React frontend to talk to this backend
+        config.addAllowedOriginPattern("*"); 
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Applies CORS to all endpoints
         source.registerCorsConfiguration("/**", config);
         return source;
     }
