@@ -35,7 +35,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // 1. PUBLIC AUTH & SWAGGER
+                // 1. PUBLIC AUTH & DOCUMENTATION
                 .requestMatchers(
                     "/api/v1/auth/login",
                     "/api/v1/auth/register",
@@ -44,26 +44,18 @@ public class SecurityConfig {
                     "/swagger-ui.html"
                 ).permitAll()
                 
-                // 2. PUBLIC CATEGORIES (GET only)
-                // We permit both the base list and specific IDs
-                .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
+                // 2. PUBLIC READ ACCESS (GET)
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
-                
-                // 3. PUBLIC DONATIONS (GET only)
-                // This allows the Browse page to see the list and search
-                .requestMatchers(HttpMethod.GET, "/api/v1/donations").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/donations/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/donations").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
 
-                // 4. PROTECTED ENDPOINTS
-                // Require authentication for CREATING/EDITING categories or donations
-                .requestMatchers(HttpMethod.POST, "/api/categories/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/v1/donations/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/v1/donations/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/v1/donations/**").authenticated()
+                // 3. PROTECTED WRITE ACCESS (POST, PUT, DELETE)
+                .requestMatchers("/api/v1/donations/**").authenticated()
+                .requestMatchers("/api/categories/**").authenticated()
                 
-                // Authenticated user system actions
+                // 4. AUTHENTICATED SYSTEM ENDPOINTS
                 .requestMatchers(
                     "/api/v1/auth/logout",
                     "/api/v1/auth/profile",
@@ -72,7 +64,6 @@ public class SecurityConfig {
                     "/api/v1/notifications/**"
                 ).authenticated()
 
-                // Catch-all
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -84,7 +75,6 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        // Allows the React frontend to talk to this backend
         config.addAllowedOriginPattern("*"); 
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
