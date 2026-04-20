@@ -46,19 +46,18 @@ public class SecurityConfig {
                 
                 // Allow anyone to view categories (GET only)
                 // Note: Added both /api/categories and /api/categories/** to cover all bases
-                .requestMatchers(HttpMethod.GET, "/api/categories", "/api/categories/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/categories", "/api/v1/categories/**").permitAll()
+                // .requestMatchers( "/api/categories", "/api/categories/**").permitAll()
+                // .requestMatchers( "/api/v1/categories", "/api/v1/categories/**").permitAll()
                 
                 // Allow public to VIEW donations and search
-                .requestMatchers(HttpMethod.GET, "/api/v1/donations/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/search/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+                .requestMatchers( "/api/v1/donations/**").permitAll()
+                .requestMatchers( "/api/v1/search/**").permitAll()
+                .requestMatchers( "/api/v1/reviews/**").permitAll()
 
                 // 2. PROTECTED ENDPOINTS
                 // Require authentication for modifications to categories
-                .requestMatchers(HttpMethod.POST, "/api/categories/**").authenticated()
-                .requestMatchers(HttpMethod.PUT, "/api/categories/**").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/categories/**").authenticated()
+                .requestMatchers("/api/categories/**").authenticated()
+            
                 
                 // Authenticated user actions
                 .requestMatchers(
