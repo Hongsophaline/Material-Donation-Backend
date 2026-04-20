@@ -15,9 +15,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
-
-import java.util.Arrays;
-import java.util.Collections;
+import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -31,15 +29,15 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    // Security filter chain
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            // Use the Bean defined below
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // FIXED
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // 1. Completely Public Auth & Swagger
+                // PUBLIC ENDPOINTS
                 .requestMatchers(
                     "/api/v1/auth/login",
                     "/api/v1/auth/register",
@@ -47,19 +45,17 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html"
                 ).permitAll()
-
-                // 2. Public Read Access (GET only)
+                // Public GET endpoints for categories
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/donations/**").permitAll() 
-                .requestMatchers(HttpMethod.GET, "/api/v1/donations").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
-
-                // 3. Protected Write Access (POST, PUT, DELETE)
-                .requestMatchers("/api/v1/donations/**").authenticated()
-                .requestMatchers("/api/v1/auth/logout", "/api/v1/auth/me").authenticated()
-
-                // 4. Any other request must be authenticated
+                // Reviews public access
+                .requestMatchers("/api/v1/reviews/**").permitAll()
+                // PROTECTED ENDPOINTS
+                .requestMatchers(
+                    "/api/v1/auth/logout",
+                    "/api/v1/auth/me",
+                    "/api/v1/donations/**"
+                ).authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -67,17 +63,23 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // CORS configuration source
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Allow your frontend URL specifically for better security, or use "*" for development
-        config.setAllowedOriginPatterns(Collections.singletonList("*")); 
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
         config.setAllowCredentials(true);
+        config.addAllowedOriginPattern("*"); // allow all origins (for dev)
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    // Optional CorsFilter bean
+    @Bean
+    public CorsFilter corsFilter() {
+        return new CorsFilter(corsConfigurationSource());
     }
 }
