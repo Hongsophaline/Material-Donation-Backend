@@ -56,8 +56,8 @@ public class SecurityConfig {
 
                 // 2. PROTECTED ENDPOINTS
                 // Require authentication for modifications to categories
-                .requestMatchers("/api/categories/**").authenticated()
-            
+.requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll() // ADD THIS
+    .requestMatchers(HttpMethod.GET, "/api/v1/donations/**").permitAll()            
                 
                 // Authenticated user actions
                 .requestMatchers(
