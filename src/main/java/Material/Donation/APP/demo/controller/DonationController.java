@@ -14,6 +14,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/donations")
+@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class DonationController {
 
