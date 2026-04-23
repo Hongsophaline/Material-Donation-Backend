@@ -69,19 +69,19 @@ public LoginResponse loginUser(LoginRequest request) {
     }
 
     // 3. Generate JWT Token
-    String token = jwtUtils.generateToken(user.getEmail());
+    String token = jwtUtils.generateToken(user.getEmail(), user.getId().toString());
 
     // 4. Return the full response
     return LoginResponse.builder()
             .token(token)
-            .message("Login successful")
-            .userId(user.getId()) // Matches the DTO field name
+            .userId(user.getId())
             .fullName(user.getFullName())
             .email(user.getEmail())
             .phone(user.getPhone())
             .avatarUrl(user.getAvatarUrl())
             .dob(user.getDob())
             .createdAt(user.getCreatedAt())
+            .message("Login successful")
             .build();
 }
 

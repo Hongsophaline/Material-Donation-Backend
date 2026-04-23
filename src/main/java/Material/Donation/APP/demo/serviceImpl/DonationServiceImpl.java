@@ -29,9 +29,13 @@ public class DonationServiceImpl implements DonationService {
     private final DonationImageRepository donationImageRepository;
     private final CategoryRepository categoryRepository;
 
+    // =========================
+    // CREATE DONATION
+    // =========================
     @Override
     @Transactional
     public DonationResponse createDonation(String email, DonationRequest request) {
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -47,47 +51,81 @@ public class DonationServiceImpl implements DonationService {
                 .address(request.getAddress())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
-                .status("available")
+                .status("AVAILABLE")
                 .build();
 
         return mapToResponse(donationRepository.save(donation));
     }
 
+    // =========================
+    // GET ALL DONATIONS
+    // =========================
     @Override
     public List<DonationResponse> getAllDonations(UUID categoryId) {
-        // Updated to use the filtered repository method
-        return donationRepository.findByCategoryId(categoryId).stream()
+
+        if (categoryId != null) {
+            return donationRepository.findByCategoryId(categoryId)
+                    .stream()
+                    .map(this::mapToResponse)
+                    .collect(Collectors.toList());
+        }
+
+        return donationRepository.findAll()
+                .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    // =========================
+    // GET BY USER
+    // =========================
     @Override
     public List<DonationResponse> getDonationsByUser(String email) {
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return donationRepository.findByDonorId(user.getId()).stream()
+        return donationRepository.findByDonorId(user.getId())
+                .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    // =========================
+    // GET BY ID (FIXED ERROR)
+    // =========================
+    @Override
+    public DonationResponse getDonationById(UUID id) {
+
+        Donation donation = donationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Donation not found"));
+
+        return mapToResponse(donation);
+    }
+
+    // =========================
+    // UPDATE DONATION
+    // =========================
     @Override
     @Transactional
     public DonationResponse updateDonation(UUID donationId, String email, UpdateDonationRequest request) {
+
         Donation donation = donationRepository.findById(donationId)
                 .orElseThrow(() -> new RuntimeException("Donation not found"));
 
         if (!donation.getDonor().getEmail().equalsIgnoreCase(email)) {
-            throw new RuntimeException("You do not have permission to update this donation");
+            throw new RuntimeException("No permission");
         }
 
         if (request.getTitle() != null) donation.setTitle(request.getTitle());
         if (request.getDescription() != null) donation.setDescription(request.getDescription());
+
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
             donation.setCategory(category);
         }
+
         if (request.getCondition() != null) donation.setCondition(request.getCondition());
         if (request.getStatus() != null) donation.setStatus(request.getStatus());
         if (request.getAddress() != null) donation.setAddress(request.getAddress());
@@ -95,27 +133,35 @@ public class DonationServiceImpl implements DonationService {
         return mapToResponse(donationRepository.save(donation));
     }
 
+    // =========================
+    // DELETE DONATION
+    // =========================
     @Override
     @Transactional
     public void deleteDonation(UUID donationId, String email) {
+
         Donation donation = donationRepository.findById(donationId)
                 .orElseThrow(() -> new RuntimeException("Donation not found"));
 
         if (!donation.getDonor().getEmail().equalsIgnoreCase(email)) {
-            throw new RuntimeException("You do not have permission to delete this donation");
+            throw new RuntimeException("No permission");
         }
 
         donationRepository.delete(donation);
     }
 
+    // =========================
+    // ADD IMAGE
+    // =========================
     @Override
     @Transactional
     public void addDonationImage(UUID donationId, String email, String imageUrl) {
+
         Donation donation = donationRepository.findById(donationId)
                 .orElseThrow(() -> new RuntimeException("Donation not found"));
 
         if (!donation.getDonor().getEmail().equalsIgnoreCase(email)) {
-            throw new RuntimeException("Permission denied");
+            throw new RuntimeException("No permission");
         }
 
         DonationImage img = DonationImage.builder()
@@ -127,6 +173,27 @@ public class DonationServiceImpl implements DonationService {
         donationImageRepository.save(img);
     }
 
+    // =========================
+    // SEARCH (FIXED - NO CRASH)
+    // =========================
+    @Override
+    public Object searchDonations(String keyword, UUID categoryId) {
+
+        List<Donation> donations = donationRepository.findAll();
+
+        return donations.stream()
+                .filter(d -> keyword == null ||
+                        d.getTitle().toLowerCase().contains(keyword.toLowerCase()) ||
+                        d.getDescription().toLowerCase().contains(keyword.toLowerCase()))
+                .filter(d -> categoryId == null ||
+                        (d.getCategory() != null && d.getCategory().getId().equals(categoryId)))
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // =========================
+    // MAPPER
+    // =========================
     private DonationResponse mapToResponse(Donation donation) {
         return DonationResponse.builder()
                 .id(donation.getId())
@@ -137,18 +204,12 @@ public class DonationServiceImpl implements DonationService {
                 .status(donation.getStatus())
                 .address(donation.getAddress())
                 .donorName(donation.getDonor() != null ? donation.getDonor().getFullName() : "Unknown")
-                .imageUrls(donation.getImages() != null ? 
-                    donation.getImages().stream()
-                        .map(DonationImage::getImageUrl)
-                        .collect(Collectors.toList()) 
-                    : List.of())
+                .imageUrls(donation.getImages() != null
+                        ? donation.getImages().stream()
+                                .map(DonationImage::getImageUrl)
+                                .collect(Collectors.toList())
+                        : List.of())
                 .createdAt(donation.getCreatedAt())
                 .build();
-    }
-
-    @Override
-    public Object searchDonations(String keyword, UUID categoryId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'searchDonations'");
     }
 }
