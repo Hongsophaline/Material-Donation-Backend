@@ -1,72 +1,93 @@
 package Material.Donation.APP.demo.serviceImpl;
 
-import Material.Donation.APP.demo.entity.Notification;
-import Material.Donation.APP.demo.entity.User;
-import Material.Donation.APP.demo.repository.NotificationRepository;
-import Material.Donation.APP.demo.repository.UserRepository;
-import Material.Donation.APP.demo.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
+import Material.Donation.APP.demo.entity.Notification;
+import Material.Donation.APP.demo.repository.NotificationRepository;
+import Material.Donation.APP.demo.service.NotificationService;
 
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
-    private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
+    // =========================
+    // 🔔 CREATE NOTIFICATION + REAL TIME
+    // =========================
     @Override
-    @Transactional
-    public void createNotification(UUID userId, String role, String type, String title, String message) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public void createNotification(UUID userId,
+                                   String role,
+                                   String type,
+                                   String title,
+                                   String message) {
 
         Notification notification = Notification.builder()
-                .user(user)
-                .recipientType(role != null ? role.toUpperCase() : "GENERAL")
+                .userId(userId)
+                .role(role)
                 .type(type)
                 .title(title)
                 .message(message)
-                .isRead(false) // Initial state is always unread
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
                 .build();
 
-        notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+
+        // 🔥 SEND REAL-TIME NOTIFICATION
+        messagingTemplate.convertAndSendToUser(
+                userId.toString(),
+                "/queue/notifications",
+                saved
+        );
     }
 
+    // =========================
+    // 📩 GET NOTIFICATIONS
+    // =========================
     @Override
-    @Transactional(readOnly = true)
     public List<Notification> getMyNotifications(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        // This ensures new notifications appear at the top of your UI list
-        return notificationRepository.findByUserOrderByCreatedAtDesc(user);
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
+    // =========================
+    // ✅ MARK ONE AS READ
+    // =========================
     @Override
-    @Transactional
     public void markAsRead(UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
-        
-        notification.setRead(true); 
+
+        notification.setRead(true);
         notificationRepository.save(notification);
     }
 
+    // =========================
+    // ✅ MARK ALL AS READ
+    // =========================
     @Override
-    @Transactional
     public void markAllAsRead(UUID userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        // Fetches only notifications that are currently 'false'
-        List<Notification> unread = notificationRepository.findByUserAndIsReadFalse(user);
-        
-        unread.forEach(n -> n.setRead(true));
-        notificationRepository.saveAll(unread);
+        List<Notification> notifications = notificationRepository.findByUserId(userId);
+
+        for (Notification n : notifications) {
+            n.setRead(true);
+        }
+
+        notificationRepository.saveAll(notifications);
+    }
+
+    // =========================
+    // 🔴 COUNT UNREAD NOTIFICATIONS
+    // =========================
+    @Override
+    public long countUnreadNotifications(UUID userId) {
+        return notificationRepository.countByUserIdAndIsReadFalse(userId);
     }
 }

@@ -1,28 +1,18 @@
-package Material.Donation.APP.demo.entity;
+package Material.Donation.APP.demo.dto.response;
 
-import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Notification {
-
-    @Id
-    @GeneratedValue
-    private UUID id;
-
+public class NotificationDto {
     private UUID userId;
-    private String role;
-    private String type;
     private String title;
     private String message;
+    private String type;
     private boolean isRead;
-
     private LocalDateTime createdAt;
 }
