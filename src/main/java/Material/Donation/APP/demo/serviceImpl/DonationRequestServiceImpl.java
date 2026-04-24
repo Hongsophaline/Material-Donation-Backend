@@ -155,12 +155,17 @@ public class DonationRequestServiceImpl implements DonationRequestService {
     private RequestResponse mapToResponse(DonationRequest req) {
         return RequestResponse.builder()
                 .id(req.getId())
-                .donationId(req.getDonation().getId())
                 .donationTitle(req.getDonation().getTitle())
-                .requesterName(req.getRequester().getFullName())
                 .status(req.getStatus())
-                .message(req.getMessage())
                 .createdAt(req.getCreatedAt())
+                .requesterId(req.getRequester().getId())
+                .requesterName(req.getRequester().getFullName())
+                .requesterPhone(req.getRequester().getPhone())
+                .requesterAvatar(req.getRequester().getAvatarUrl())
+                .donorId(req.getDonation().getDonor().getId())
+                .donorName(req.getDonation().getDonor().getFullName())
+                .donorPhone(req.getDonation().getDonor().getPhone())
+                .donorAvatar(req.getDonation().getDonor().getAvatarUrl())
                 .build();
     }
 }

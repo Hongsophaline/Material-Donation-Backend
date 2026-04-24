@@ -2,14 +2,15 @@ package Material.Donation.APP.demo.serviceImpl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import Material.Donation.APP.demo.entity.Notification;
+import Material.Donation.APP.demo.entity.User;
 import Material.Donation.APP.demo.repository.NotificationRepository;
+import Material.Donation.APP.demo.repository.UserRepository;
 import Material.Donation.APP.demo.service.NotificationService;
 
 @Service
@@ -17,31 +18,27 @@ import Material.Donation.APP.demo.service.NotificationService;
 public class NotificationServiceImpl implements NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository; 
     private final SimpMessagingTemplate messagingTemplate;
 
-    // =========================
-    // 🔔 CREATE NOTIFICATION + REAL TIME
-    // =========================
     @Override
-    public void createNotification(UUID userId,
-                                   String role,
-                                   String type,
-                                   String title,
-                                   String message) {
+    @Transactional
+    public void createNotification(UUID userId, String recipientType, String type, String title, String message) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         Notification notification = Notification.builder()
-                .userId(userId)
-                .role(role)
+                .user(user) 
+                .recipientType(recipientType) // Now defined in Entity
                 .type(type)
                 .title(title)
                 .message(message)
                 .isRead(false)
-                .createdAt(LocalDateTime.now())
                 .build();
 
         Notification saved = notificationRepository.save(notification);
 
-        // 🔥 SEND REAL-TIME NOTIFICATION
+        // 🔥 REAL-TIME WEBSOCKET SEND
         messagingTemplate.convertAndSendToUser(
                 userId.toString(),
                 "/queue/notifications",
@@ -49,43 +46,28 @@ public class NotificationServiceImpl implements NotificationService {
         );
     }
 
-    // =========================
-    // 📩 GET NOTIFICATIONS
-    // =========================
     @Override
     public List<Notification> getMyNotifications(UUID userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    // =========================
-    // ✅ MARK ONE AS READ
-    // =========================
     @Override
+    @Transactional
     public void markAsRead(UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
-
         notification.setRead(true);
         notificationRepository.save(notification);
     }
 
-    // =========================
-    // ✅ MARK ALL AS READ
-    // =========================
     @Override
+    @Transactional
     public void markAllAsRead(UUID userId) {
         List<Notification> notifications = notificationRepository.findByUserId(userId);
-
-        for (Notification n : notifications) {
-            n.setRead(true);
-        }
-
+        notifications.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(notifications);
     }
 
-    // =========================
-    // 🔴 COUNT UNREAD NOTIFICATIONS
-    // =========================
     @Override
     public long countUnreadNotifications(UUID userId) {
         return notificationRepository.countByUserIdAndIsReadFalse(userId);

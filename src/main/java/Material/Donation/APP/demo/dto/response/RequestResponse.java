@@ -9,12 +9,19 @@ import lombok.Data;
 @Data
 @Builder
 public class RequestResponse {
-
     private UUID id;
-    private UUID donationId;
     private String donationTitle;
-    private String requesterName;
     private String status;
-    private String message;
     private LocalDateTime createdAt;
+    
+    // ADD THESE FIELDS
+    private UUID requesterId;
+    private String requesterName;
+    private String requesterPhone;
+    private String requesterAvatar;
+
+    private UUID donorId;
+    private String donorName;
+    private String donorPhone;
+    private String donorAvatar;
 }
