@@ -60,21 +60,25 @@ public class DonationServiceImpl implements DonationService {
     // =========================
     // GET ALL DONATIONS
     // =========================
-    @Override
-    public List<DonationResponse> getAllDonations(UUID categoryId) {
+// =========================
+// GET ALL DONATIONS (ONLY AVAILABLE)
+// =========================
+@Override
+public List<DonationResponse> getAllDonations(UUID categoryId) {
+    List<Donation> donations;
 
-        if (categoryId != null) {
-            return donationRepository.findByCategoryId(categoryId)
-                    .stream()
-                    .map(this::mapToResponse)
-                    .collect(Collectors.toList());
-        }
-
-        return donationRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    if (categoryId != null) {
+        donations = donationRepository.findByCategoryId(categoryId);
+    } else {
+        donations = donationRepository.findAll();
     }
+
+    return donations.stream()
+            // ADDED THIS FILTER: Only show items that are AVAILABLE
+            .filter(d -> "AVAILABLE".equalsIgnoreCase(d.getStatus()))
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+}
 
     // =========================
     // GET BY USER
@@ -176,20 +180,25 @@ public class DonationServiceImpl implements DonationService {
     // =========================
     // SEARCH (FIXED - NO CRASH)
     // =========================
-    @Override
-    public Object searchDonations(String keyword, UUID categoryId) {
+  // =========================
+// SEARCH (ONLY AVAILABLE)
+// =========================
+@Override
+public Object searchDonations(String keyword, UUID categoryId) {
 
-        List<Donation> donations = donationRepository.findAll();
+    List<Donation> donations = donationRepository.findAll();
 
-        return donations.stream()
-                .filter(d -> keyword == null ||
-                        d.getTitle().toLowerCase().contains(keyword.toLowerCase()) ||
-                        d.getDescription().toLowerCase().contains(keyword.toLowerCase()))
-                .filter(d -> categoryId == null ||
-                        (d.getCategory() != null && d.getCategory().getId().equals(categoryId)))
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+    return donations.stream()
+            // ADDED THIS FILTER: Hide claimed/reserved items from search results
+            .filter(d -> "AVAILABLE".equalsIgnoreCase(d.getStatus()))
+            .filter(d -> keyword == null ||
+                    d.getTitle().toLowerCase().contains(keyword.toLowerCase()) ||
+                    d.getDescription().toLowerCase().contains(keyword.toLowerCase()))
+            .filter(d -> categoryId == null ||
+                    (d.getCategory() != null && d.getCategory().getId().equals(categoryId)))
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+}
 
     // =========================
     // MAPPER

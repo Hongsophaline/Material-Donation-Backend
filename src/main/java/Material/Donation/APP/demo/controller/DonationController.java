@@ -6,9 +6,9 @@ import Material.Donation.APP.demo.dto.response.DonationResponse;
 import Material.Donation.APP.demo.service.DonationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,9 +20,7 @@ public class DonationController {
 
     private final DonationService donationService;
 
-    // =========================
-    // 📦 GET ALL DONATIONS (OPTIONAL FILTER)
-    // =========================
+    // GET ALL DONATIONS
     @GetMapping
     public ResponseEntity<List<DonationResponse>> getAll(
             @RequestParam(required = false) UUID categoryId) {
@@ -30,73 +28,87 @@ public class DonationController {
         return ResponseEntity.ok(donationService.getAllDonations(categoryId));
     }
 
-    // =========================
-    // 📦 GET DONATION BY ID (NEW)
-    // =========================
+    // GET DONATION BY ID
     @GetMapping("/{id}")
     public ResponseEntity<DonationResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(donationService.getDonationById(id));
     }
 
-    // =========================
-    // ➕ CREATE DONATION
-    // =========================
+    // CREATE DONATION - FIXED
     @PostMapping
     public ResponseEntity<DonationResponse> create(
-            Principal principal,
+            Authentication authentication,     // Changed from Principal
             @RequestBody DonationRequest request) {
 
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String username = authentication.getName();
+
         return ResponseEntity.ok(
-                donationService.createDonation(principal.getName(), request)
+                donationService.createDonation(username, request)
         );
     }
 
-    // =========================
-    // 👤 GET MY DONATIONS
-    // =========================
+    // GET MY DONATIONS
     @GetMapping("/my")
-    public ResponseEntity<List<DonationResponse>> getMyDonations(Principal principal) {
+    public ResponseEntity<List<DonationResponse>> getMyDonations(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String username = authentication.getName();
         return ResponseEntity.ok(
-                donationService.getDonationsByUser(principal.getName())
+                donationService.getDonationsByUser(username)
         );
     }
 
-    // =========================
-    // ✏️ UPDATE DONATION
-    // =========================
+    // UPDATE DONATION
     @PutMapping("/{id}")
     public ResponseEntity<DonationResponse> update(
             @PathVariable UUID id,
-            Principal principal,
+            Authentication authentication,
             @RequestBody UpdateDonationRequest request) {
 
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String username = authentication.getName();
         return ResponseEntity.ok(
-                donationService.updateDonation(id, principal.getName(), request)
+                donationService.updateDonation(id, username, request)
         );
     }
 
-    // =========================
-    // ❌ DELETE DONATION
-    // =========================
+    // DELETE DONATION
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            Principal principal,
+            Authentication authentication,
             @PathVariable UUID id) {
 
-        donationService.deleteDonation(id, principal.getName());
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String username = authentication.getName();
+        donationService.deleteDonation(id, username);
         return ResponseEntity.noContent().build();
     }
 
-    // =========================
-    // 🖼 ADD IMAGE TO DONATION
-    // =========================
+    // ADD IMAGE TO DONATION
     @PostMapping("/{id}/images")
     public ResponseEntity<String> addImage(
             @PathVariable UUID id,
             @RequestParam String imageUrl,
-            Principal principal) {
+            Authentication authentication) {
 
-        donationService.addDonationImage(id, principal.getName(), imageUrl);
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        String username = authentication.getName();
+        donationService.addDonationImage(id, username, imageUrl);
         return ResponseEntity.ok("Image added successfully");
     }
 }

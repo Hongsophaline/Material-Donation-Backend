@@ -19,15 +19,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
-    // =========================
-    // 🔔 CREATE NOTIFICATION + REAL TIME
-    // =========================
     @Override
-    public void createNotification(UUID userId,
-                                   String role,
-                                   String type,
-                                   String title,
-                                   String message) {
+    public void createNotification(UUID userId, String role, String type, String title, String message) {
 
         Notification notification = Notification.builder()
                 .userId(userId)
@@ -35,13 +28,13 @@ public class NotificationServiceImpl implements NotificationService {
                 .type(type)
                 .title(title)
                 .message(message)
-                .isRead(false)
+                .isRead(false) 
                 .createdAt(LocalDateTime.now())
                 .build();
 
         Notification saved = notificationRepository.save(notification);
 
-        // 🔥 SEND REAL-TIME NOTIFICATION
+        
         messagingTemplate.convertAndSendToUser(
                 userId.toString(),
                 "/queue/notifications",
@@ -49,45 +42,30 @@ public class NotificationServiceImpl implements NotificationService {
         );
     }
 
-    // =========================
-    // 📩 GET NOTIFICATIONS
-    // =========================
     @Override
     public List<Notification> getMyNotifications(UUID userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }
 
-    // =========================
-    // ✅ MARK ONE AS READ
-    // =========================
     @Override
     public void markAsRead(UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
 
-        notification.setRead(true);
+        notification.setRead(true); // Lombok @Setter handles this
         notificationRepository.save(notification);
     }
 
-    // =========================
-    // ✅ MARK ALL AS READ
-    // =========================
     @Override
     public void markAllAsRead(UUID userId) {
         List<Notification> notifications = notificationRepository.findByUserId(userId);
-
-        for (Notification n : notifications) {
-            n.setRead(true);
-        }
-
+        notifications.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(notifications);
     }
 
-    // =========================
-    // 🔴 COUNT UNREAD NOTIFICATIONS
-    // =========================
     @Override
     public long countUnreadNotifications(UUID userId) {
+        // Matches the screenshot error where it looks for countByUserIdAndIsReadFalse
         return notificationRepository.countByUserIdAndIsReadFalse(userId);
     }
 }

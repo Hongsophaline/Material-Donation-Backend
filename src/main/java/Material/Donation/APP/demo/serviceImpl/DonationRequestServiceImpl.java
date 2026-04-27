@@ -152,15 +152,20 @@ public class DonationRequestServiceImpl implements DonationRequestService {
     // =========================
     // MAP RESPONSE
     // =========================
-    private RequestResponse mapToResponse(DonationRequest req) {
-        return RequestResponse.builder()
-                .id(req.getId())
-                .donationId(req.getDonation().getId())
-                .donationTitle(req.getDonation().getTitle())
-                .requesterName(req.getRequester().getFullName())
-                .status(req.getStatus())
-                .message(req.getMessage())
-                .createdAt(req.getCreatedAt())
-                .build();
-    }
+// Material.Donation.APP.demo.serviceImpl.DonationRequestServiceImpl.java
+
+private RequestResponse mapToResponse(DonationRequest req) {
+    return RequestResponse.builder()
+            .id(req.getId())
+            .donationId(req.getDonation().getId())
+            .donationTitle(req.getDonation().getTitle())
+            .requesterName(req.getRequester().getFullName())
+            .requesterPhone(req.getRequester().getPhone()) // Map requester phone
+            .donorName(req.getDonation().getDonor().getFullName()) // Map donor name
+            .donorPhone(req.getDonation().getDonor().getPhone())   // Map donor phone
+            .status(req.getStatus())
+            .message(req.getMessage())
+            .createdAt(req.getCreatedAt())
+            .build();
+}
 }

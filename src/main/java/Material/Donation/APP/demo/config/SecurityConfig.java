@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -35,13 +34,27 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .cors(Customizer.withDefaults())
-            .sessionManagement(session ->
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
+                // CORS preflight
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // Public endpoints
                 .requestMatchers("/api/v1/auth/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/categories/**", "/api/v1/donations/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/donations/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/requests").permitAll()
+                // Authenticated endpoints
+                .requestMatchers(HttpMethod.POST, "/api/v1/donations").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/donations/*/images").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/requests").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/requests/**").authenticated()         // ← Added
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/requests/**").authenticated()       // ← Added
+
+                // Everything else requires authentication
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -53,31 +66,20 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
-
-        config.setAllowedMethods(List.of(
-            "GET",
-            "POST",
-            "PUT",
-            "DELETE",
-            "PATCH",   // 🔥 REQUIRED FIX
-            "OPTIONS"
+        config.setAllowedOrigins(List.of(
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000"
         ));
 
-        config.setAllowedHeaders(List.of(
-            "Authorization",
-            "Content-Type",
-            "Cache-Control",
-            "Accept",
-            "Origin"
-        ));
-
-        config.setAllowCredentials(true);
+        config.setAllowedMethods(List.of("*"));
+        config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
-
         return source;
     }
 }
