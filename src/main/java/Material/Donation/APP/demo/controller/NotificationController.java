@@ -16,21 +16,35 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
+    // =========================
+    // 📩 GET USER NOTIFICATIONS
+    // =========================
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Notification>> getNotifications(@PathVariable UUID userId) {
         return ResponseEntity.ok(notificationService.getMyNotifications(userId));
     }
 
+    // =========================
+    // 🔴 MARK ONE AS READ
+    // =========================
     @PatchMapping("/{id}/read")
     public ResponseEntity<Void> markAsRead(@PathVariable UUID id) {
         notificationService.markAsRead(id);
         return ResponseEntity.noContent().build();
     }
-@PatchMapping("/user/{userId}/read-all")
-public ResponseEntity<Void> markAllAsRead(@PathVariable UUID userId) {
-    notificationService.markAllAsRead(userId);
-    return ResponseEntity.noContent().build();
-}
+
+    // =========================
+    // 🔴 MARK ALL AS READ
+    // =========================
+    @PatchMapping("/user/{userId}/read-all")
+    public ResponseEntity<Void> markAllAsRead(@PathVariable UUID userId) {
+        notificationService.markAllAsRead(userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // =========================
+    // 🔔 SEND NOTIFICATION (TEST / MANUAL)
+    // =========================
     @PostMapping("/send/{userId}")
     public ResponseEntity<Void> sendNotification(
             @PathVariable UUID userId,
@@ -38,9 +52,16 @@ public ResponseEntity<Void> markAllAsRead(@PathVariable UUID userId) {
             @RequestParam String type,
             @RequestParam String title,
             @RequestParam String message) {
-        
-        // Use the unified method name
+
         notificationService.createNotification(userId, role, type, title, message);
         return ResponseEntity.ok().build();
+    }
+
+    // =========================
+    // 🔴 UNREAD COUNT (BADGE SUPPORT)
+    // =========================
+    @GetMapping("/user/{userId}/unread-count")
+    public ResponseEntity<Long> getUnreadCount(@PathVariable UUID userId) {
+        return ResponseEntity.ok(notificationService.countUnreadNotifications(userId));
     }
 }

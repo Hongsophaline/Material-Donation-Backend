@@ -2,11 +2,8 @@ package Material.Donation.APP.demo.service;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-
 import org.springframework.stereotype.Service;
-
 import lombok.RequiredArgsConstructor;
-
 import Material.Donation.APP.demo.dto.request.CreateRequest;
 import Material.Donation.APP.demo.entity.Donation;
 import Material.Donation.APP.demo.entity.DonationRequest;
@@ -38,29 +35,29 @@ public class RequestService {
         DonationRequest request = DonationRequest.builder()
                 .donation(donation)
                 .requester(requester)
-                .status("pending")
+                .status("PENDING")
                 .message(dto.getMessage())
                 .createdAt(LocalDateTime.now())
                 .build();
 
         requestRepository.save(request);
 
-        // Notify donor about new request
+        // Notify donor
         notificationService.createNotification(
                 donation.getDonor().getId(),
-                "DONOR",                     // recipient type
-                "REQUEST",                    // type
-                "New Request",                // title
-                requester.getFullName() + " requested your donation: " + donation.getTitle() // message
+                "DONOR",
+                "REQUEST",
+                "New Request",
+                requester.getFullName() + " requested: " + donation.getTitle()
         );
 
-        // Optional: Notify requester that request was sent
+        // Notify requester
         notificationService.createNotification(
                 requester.getId(),
-                "USER",                       // recipient type
+                "USER",
                 "REQUEST_SENT",
                 "Request Sent",
-                "You requested donation: " + donation.getTitle()
+                "You requested: " + donation.getTitle()
         );
     }
 }

@@ -6,9 +6,8 @@ import java.util.UUID;
 
 public interface NotificationService {
     void createNotification(UUID userId, String role, String type, String title, String message);
-    
     List<Notification> getMyNotifications(UUID userId);
-    
     void markAsRead(UUID notificationId);
     void markAllAsRead(UUID userId);
+    long countUnreadNotifications(UUID userId);
 }

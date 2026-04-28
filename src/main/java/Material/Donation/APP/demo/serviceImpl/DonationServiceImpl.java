@@ -9,11 +9,13 @@ import Material.Donation.APP.demo.entity.DonationImage;
 import Material.Donation.APP.demo.entity.User;
 import Material.Donation.APP.demo.repository.DonationRepository;
 import Material.Donation.APP.demo.repository.UserRepository;
+import Material.Donation.APP.demo.repository.DonationImageRepository;
+import Material.Donation.APP.demo.repository.CategoryRepository;
 import Material.Donation.APP.demo.service.DonationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import Material.Donation.APP.demo.repository.DonationImageRepository;
-import Material.Donation.APP.demo.repository.CategoryRepository;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -24,11 +26,16 @@ public class DonationServiceImpl implements DonationService {
 
     private final DonationRepository donationRepository;
     private final UserRepository userRepository;
-    @SuppressWarnings("unused")
-    private final DonationImageRepository DonationImageRepository;
+    private final DonationImageRepository donationImageRepository;
     private final CategoryRepository categoryRepository;
+
+    // =========================
+    // CREATE DONATION
+    // =========================
     @Override
+    @Transactional
     public DonationResponse createDonation(String email, DonationRequest request) {
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -44,120 +51,174 @@ public class DonationServiceImpl implements DonationService {
                 .address(request.getAddress())
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
-                .status("available")
+                .status("AVAILABLE")
                 .build();
 
         return mapToResponse(donationRepository.save(donation));
     }
 
-    @Override
-    public List<DonationResponse> getAllDonations() {
-        return donationRepository.findAll().stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<DonationResponse> getDonationsByUser(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return donationRepository.findByDonorId(user.getId()).stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-private DonationResponse mapToResponse(Donation donation) {
-    return DonationResponse.builder()
-            .id(donation.getId())
-            .title(donation.getTitle())
-            .description(donation.getDescription())
-            .categoryId(donation.getCategory() != null ? donation.getCategory().getId() : null)
-            .condition(donation.getCondition())
-            .status(donation.getStatus())
-            .address(donation.getAddress())
-            .donorName(donation.getDonor() != null ? donation.getDonor().getFullName() : "Unknown")
-            // Add this line to include the URLs in the response
-            .imageUrls(donation.getImages() != null ? 
-                donation.getImages().stream()
-                    .map(img -> img.getImageUrl())
-                    .collect(Collectors.toList()) 
-                : List.of())
-            .createdAt(donation.getCreatedAt())
-            .build();
-}
-   @Override
-public DonationResponse updateDonation(UUID donationId, String email, UpdateDonationRequest request) {
-    // 1. Find the donation
-    Donation donation = donationRepository.findById(donationId)
-            .orElseThrow(() -> new RuntimeException("Donation not found"));
-
-    // 2. Security Check: Is the person updating it the actual owner?
-    if (!donation.getDonor().getEmail().equals(email)) {
-        throw new RuntimeException("You do not have permission to update this donation");
-    }
-
-    // 3. Update fields if provided
-    if (request.getTitle() != null) donation.setTitle(request.getTitle());
-    if (request.getDescription() != null) donation.setDescription(request.getDescription());
-    if (request.getCategoryId() != null) {
-        Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new RuntimeException("Category not found"));
-        donation.setCategory(category);
-    }
-    if (request.getCondition() != null) donation.setCondition(request.getCondition());
-    if (request.getStatus() != null) donation.setStatus(request.getStatus());
-    if (request.getAddress() != null) donation.setAddress(request.getAddress());
-    if (request.getLatitude() != null) donation.setLatitude(request.getLatitude());
-    if (request.getLongitude() != null) donation.setLongitude(request.getLongitude());
-
-    // 4. Save and Map back to Response DTO
-    return mapToResponse(donationRepository.save(donation));
-}
+    // =========================
+    // GET ALL DONATIONS
+    // =========================
+// =========================
+// GET ALL DONATIONS (ONLY AVAILABLE)
+// =========================
 @Override
-public void deleteDonation(UUID donationId, String email) {
-    // 1. Find the donation
-    Donation donation = donationRepository.findById(donationId)
-            .orElseThrow(() -> new RuntimeException("Donation not found")); 
+public List<DonationResponse> getAllDonations(UUID categoryId) {
+    List<Donation> donations;
 
-    // 2. Security Check: Is the person deleting it the actual owner?
-    if (!donation.getDonor().getEmail().equals(email)) {
-        throw new RuntimeException("You do not have permission to delete this donation");
+    if (categoryId != null) {
+        donations = donationRepository.findByCategoryId(categoryId);
+    } else {
+        donations = donationRepository.findAll();
     }
 
-    // 3. Delete the donation
-    donationRepository.delete(donation);
-}
-// Make sure you have this repository injected at the top
-private final DonationImageRepository donationImageRepository;
-
-@Override
-public void addDonationImage(UUID donationId, String email, String imageUrl) {
-    // 1. Find the donation
-    Donation donation = donationRepository.findById(donationId)
-            .orElseThrow(() -> new RuntimeException("Donation not found"));
-
-    // 2. Permission Check
-    if (!donation.getDonor().getEmail().equalsIgnoreCase(email)) {
-        throw new RuntimeException("You do not have permission to add images to this donation");
-    }
-
-    // 3. Create and Save Image
-    DonationImage img = DonationImage.builder()
-            .donation(donation)
-            .imageUrl(imageUrl)
-            .sortOrder(0)
-            .build();
-
-    donationImageRepository.save(img);
-}
-@Override
-public List<DonationResponse> searchDonations(String keyword, UUID categoryId) {
-    // If keyword is empty string, treat it as null for the query
-    String searchKeyword = (keyword != null && !keyword.trim().isEmpty()) ? keyword : null;
-    
-    return donationRepository.searchDonations(searchKeyword, categoryId)
-            .stream()
+    return donations.stream()
+            // ADDED THIS FILTER: Only show items that are AVAILABLE
+            .filter(d -> "AVAILABLE".equalsIgnoreCase(d.getStatus()))
             .map(this::mapToResponse)
             .collect(Collectors.toList());
 }
+
+    // =========================
+    // GET BY USER
+    // =========================
+    @Override
+    public List<DonationResponse> getDonationsByUser(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return donationRepository.findByDonorId(user.getId())
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    // =========================
+    // GET BY ID (FIXED ERROR)
+    // =========================
+    @Override
+    public DonationResponse getDonationById(UUID id) {
+
+        Donation donation = donationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Donation not found"));
+
+        return mapToResponse(donation);
+    }
+
+    // =========================
+    // UPDATE DONATION
+    // =========================
+    @Override
+    @Transactional
+    public DonationResponse updateDonation(UUID donationId, String email, UpdateDonationRequest request) {
+
+        Donation donation = donationRepository.findById(donationId)
+                .orElseThrow(() -> new RuntimeException("Donation not found"));
+
+        if (!donation.getDonor().getEmail().equalsIgnoreCase(email)) {
+            throw new RuntimeException("No permission");
+        }
+
+        if (request.getTitle() != null) donation.setTitle(request.getTitle());
+        if (request.getDescription() != null) donation.setDescription(request.getDescription());
+
+        if (request.getCategoryId() != null) {
+            Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+            donation.setCategory(category);
+        }
+
+        if (request.getCondition() != null) donation.setCondition(request.getCondition());
+        if (request.getStatus() != null) donation.setStatus(request.getStatus());
+        if (request.getAddress() != null) donation.setAddress(request.getAddress());
+
+        return mapToResponse(donationRepository.save(donation));
+    }
+
+    // =========================
+    // DELETE DONATION
+    // =========================
+    @Override
+    @Transactional
+    public void deleteDonation(UUID donationId, String email) {
+
+        Donation donation = donationRepository.findById(donationId)
+                .orElseThrow(() -> new RuntimeException("Donation not found"));
+
+        if (!donation.getDonor().getEmail().equalsIgnoreCase(email)) {
+            throw new RuntimeException("No permission");
+        }
+
+        donationRepository.delete(donation);
+    }
+
+    // =========================
+    // ADD IMAGE
+    // =========================
+    @Override
+    @Transactional
+    public void addDonationImage(UUID donationId, String email, String imageUrl) {
+
+        Donation donation = donationRepository.findById(donationId)
+                .orElseThrow(() -> new RuntimeException("Donation not found"));
+
+        if (!donation.getDonor().getEmail().equalsIgnoreCase(email)) {
+            throw new RuntimeException("No permission");
+        }
+
+        DonationImage img = DonationImage.builder()
+                .donation(donation)
+                .imageUrl(imageUrl)
+                .sortOrder(0)
+                .build();
+
+        donationImageRepository.save(img);
+    }
+
+    // =========================
+    // SEARCH (FIXED - NO CRASH)
+    // =========================
+  // =========================
+// SEARCH (ONLY AVAILABLE)
+// =========================
+@Override
+public Object searchDonations(String keyword, UUID categoryId) {
+
+    List<Donation> donations = donationRepository.findAll();
+
+    return donations.stream()
+            // ADDED THIS FILTER: Hide claimed/reserved items from search results
+            .filter(d -> "AVAILABLE".equalsIgnoreCase(d.getStatus()))
+            .filter(d -> keyword == null ||
+                    d.getTitle().toLowerCase().contains(keyword.toLowerCase()) ||
+                    d.getDescription().toLowerCase().contains(keyword.toLowerCase()))
+            .filter(d -> categoryId == null ||
+                    (d.getCategory() != null && d.getCategory().getId().equals(categoryId)))
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+}
+
+    // =========================
+    // MAPPER
+    // =========================
+    private DonationResponse mapToResponse(Donation donation) {
+        return DonationResponse.builder()
+                .id(donation.getId())
+                .title(donation.getTitle())
+                .description(donation.getDescription())
+                .categoryId(donation.getCategory() != null ? donation.getCategory().getId() : null)
+                .condition(donation.getCondition())
+                .status(donation.getStatus())
+                .address(donation.getAddress())
+                .donorName(donation.getDonor() != null ? donation.getDonor().getFullName() : "Unknown")
+                .imageUrls(donation.getImages() != null
+                        ? donation.getImages().stream()
+                                .map(DonationImage::getImageUrl)
+                                .collect(Collectors.toList())
+                        : List.of())
+                .createdAt(donation.getCreatedAt())
+                .build();
+    }
 }

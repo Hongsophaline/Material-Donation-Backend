@@ -11,6 +11,7 @@ import Material.Donation.APP.demo.service.CategoryService;
 
 @RestController
 @RequestMapping("/api/categories")
+@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 public class CategoryController {
 
