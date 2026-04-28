@@ -14,10 +14,10 @@ public interface DonationRepository extends JpaRepository<Donation, UUID> {
     
     // Custom query to filter by category ID
     // If categoryId is NULL (User selects "All"), the filter is ignored
-    @Query("SELECT d FROM Donation d WHERE " +
-           "(:categoryId IS NULL OR d.category.id = :categoryId) " +
-           "AND d.status = 'available'")
-    List<Donation> findByCategoryId(@Param("categoryId") UUID categoryId);
+  @Query("SELECT d FROM Donation d WHERE " +
+       "(:categoryId IS NULL OR d.category.id = :categoryId) " +
+       "AND LOWER(d.status) = LOWER('available')") // Safer comparison
+List<Donation> findByCategoryId(@Param("categoryId") UUID categoryId);
 
     List<Donation> findByDonorId(UUID donorId);
 

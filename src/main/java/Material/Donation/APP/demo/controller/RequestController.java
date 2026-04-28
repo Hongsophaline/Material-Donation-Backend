@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/v1/requests")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PATCH, RequestMethod.PUT, RequestMethod.DELETE})
 public class RequestController {
 
     private final DonationRequestService requestService;

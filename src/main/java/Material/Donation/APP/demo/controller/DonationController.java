@@ -22,11 +22,11 @@ public class DonationController {
 
     // GET ALL DONATIONS
     @GetMapping
-    public ResponseEntity<List<DonationResponse>> getAll(
-            @RequestParam(required = false) UUID categoryId) {
+public ResponseEntity<List<DonationResponse>> getAll(
+        @RequestParam(required = false) UUID categoryId) {
+    return ResponseEntity.ok(donationService.getAllDonations(categoryId));
+}
 
-        return ResponseEntity.ok(donationService.getAllDonations(categoryId));
-    }
 
     // GET DONATION BY ID
     @GetMapping("/{id}")
