@@ -14,4 +14,5 @@ public interface RequestRepository extends JpaRepository<DonationRequest, UUID> 
 
     // Optional: find all requests for a specific donor
     List<DonationRequest> findByDonationDonorId(UUID donorId);
+    List<DonationRequest> findByDonationDonorEmailIgnoreCase(String email);
 }

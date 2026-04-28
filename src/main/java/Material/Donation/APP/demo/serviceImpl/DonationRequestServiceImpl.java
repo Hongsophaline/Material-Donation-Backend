@@ -30,11 +30,15 @@ public class DonationRequestServiceImpl implements DonationRequestService {
     private final DonationRepository donationRepository;
     private final NotificationService notificationService;
 
+    // =========================
+    // CREATE REQUEST
+    // =========================
     @Override
     @Transactional
     public RequestResponse createRequest(String email, CreateRequest dto) {
+
         if (dto.getDonationId() == null) {
-            throw new RuntimeException("Validation Error: donationId is null");
+            throw new RuntimeException("DonationId is required");
         }
 
         User requester = userRepository.findByEmail(email)
@@ -43,97 +47,123 @@ public class DonationRequestServiceImpl implements DonationRequestService {
         Donation donation = donationRepository.findById(dto.getDonationId())
                 .orElseThrow(() -> new RuntimeException("Donation not found"));
 
+        // ❌ cannot request own item
         if (donation.getDonor().getEmail().equalsIgnoreCase(email)) {
-            throw new RuntimeException("You cannot request your own donation!");
+            throw new RuntimeException("You cannot request your own donation");
         }
 
         DonationRequest request = DonationRequest.builder()
                 .donation(donation)
                 .requester(requester)
                 .message(dto.getMessage())
-                .status("pending")
+                .status("PENDING")
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        DonationRequest savedRequest = requestRepository.save(request);
+        DonationRequest saved = requestRepository.save(request);
 
-        // 🔔 Notify donor (recipient type = DONOR)
+        //  NOTIFY DONOR (REAL-TIME)
         notificationService.createNotification(
                 donation.getDonor().getId(),
                 "DONOR",
                 "REQUEST",
-                "New Request",
-                requester.getFullName() + " requested your donation: " + donation.getTitle()
+                "New Donation Request",
+                requester.getFullName() + " requested: " + donation.getTitle()
         );
 
-        return mapToResponse(savedRequest);
+        return mapToResponse(saved);
     }
 
+    // =========================
+    // GET MY REQUESTS (SENDER)
+    // =========================
     @Override
     public List<RequestResponse> getRequestsByRequester(String email) {
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return requestRepository.findByRequesterId(user.getId())
-                .stream().map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<RequestResponse> getRequestsForMyDonations(String email) {
-        return requestRepository.findAll().stream()
-                .filter(req -> req.getDonation().getDonor().getEmail().equalsIgnoreCase(email))
+                .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
+    // =========================
+    // GET REQUESTS FOR MY DONATIONS (OWNER)
+    // =========================
+ @Override
+public List<RequestResponse> getRequestsForMyDonations(String email) {
+    // FIX: Don't use findAll(). Use the specific query:
+    return requestRepository.findByDonationDonorEmailIgnoreCase(email)
+            .stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+}
+
+    // =========================
+    // UPDATE REQUEST STATUS
+    // =========================
     @Override
     @Transactional
-    public RequestResponse updateRequestStatus(UUID requestId, String currentUserEmail, String status) {
+    public RequestResponse updateRequestStatus(UUID requestId,
+                                                String currentUserEmail,
+                                                String status) {
+
         DonationRequest req = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
+        //  only owner can update
         if (!req.getDonation().getDonor().getEmail().equalsIgnoreCase(currentUserEmail)) {
-            throw new RuntimeException("Unauthorized: You do not own this donation item.");
+            throw new RuntimeException("Unauthorized access");
         }
 
-        req.setStatus(status);
+        String normalizedStatus = status.toUpperCase();
+        req.setStatus(normalizedStatus);
 
-        // Update donation status if approved
-        if ("approved".equalsIgnoreCase(status)) {
-            Donation donation = req.getDonation();
-            donation.setStatus("pending"); // Item is now reserved
-            donationRepository.save(donation);
+        Donation donation = req.getDonation();
+
+        //  if approved → reserve item
+        if ("APPROVED".equals(normalizedStatus)) {
+            donation.setStatus("RESERVED");
         }
 
-        DonationRequest updatedRequest = requestRepository.save(req);
+        donationRepository.save(donation);
+        DonationRequest updated = requestRepository.save(req);
 
-        // 🔔 Notify requester (recipient type = USER)
-        String title = "Request " + status.substring(0, 1).toUpperCase() + status.substring(1);
-        String message = status.equalsIgnoreCase("approved") ?
-                "Your request has been approved!" :
-                "Your request has been rejected.";
+        // NOTIFY REQUESTER
+        String title = "Request " + normalizedStatus;
+        String message = "APPROVED".equals(normalizedStatus)
+                ? "Your request has been approved 🎉"
+                : "Your request has been rejected ❌";
 
         notificationService.createNotification(
-                updatedRequest.getRequester().getId(),
+                updated.getRequester().getId(),
                 "USER",
-                status.toUpperCase(),
+                normalizedStatus,
                 title,
                 message
         );
 
-        return mapToResponse(updatedRequest);
+        return mapToResponse(updated);
     }
 
-    private RequestResponse mapToResponse(DonationRequest req) {
-        return RequestResponse.builder()
-                .id(req.getId())
-                .donationId(req.getDonation().getId())
-                .donationTitle(req.getDonation().getTitle())
-                .requesterName(req.getRequester().getFullName())
-                .status(req.getStatus())
-                .message(req.getMessage())
-                .createdAt(req.getCreatedAt())
-                .build();
-    }
+    // =========================
+    // MAP RESPONSE
+    // =========================
+
+private RequestResponse mapToResponse(DonationRequest req) {
+    return RequestResponse.builder()
+            .id(req.getId())
+            .donationId(req.getDonation().getId())
+            .donationTitle(req.getDonation().getTitle())
+            .requesterName(req.getRequester().getFullName())
+            .requesterPhone(req.getRequester().getPhone()) // Map requester phone
+            .donorName(req.getDonation().getDonor().getFullName()) // Map donor name
+            .donorPhone(req.getDonation().getDonor().getPhone())   // Map donor phone
+            .status(req.getStatus())
+            .message(req.getMessage())
+            .createdAt(req.getCreatedAt())
+            .build();
+}
 }
