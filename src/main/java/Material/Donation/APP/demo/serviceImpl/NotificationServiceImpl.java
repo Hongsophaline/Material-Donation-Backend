@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,23 +23,20 @@ public class NotificationServiceImpl implements NotificationService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Override
-    @Transactional
-    public void createNotification(UUID userId, String recipientType, String type, String title, String message) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
+    public void createNotification(UUID userId, String role, String type, String title, String message) {
         Notification notification = Notification.builder()
-                .user(user) 
-                .recipientType(recipientType) // Now defined in Entity
-                .type(type)
-                .title(title)
-                .message(message)
-                .isRead(false)
-                .build();
+            .userId(userId)
+            .role(role)
+            .type(type)
+            .title(title)
+            .message(message)
+            .isRead(false) // <--- Set this explicitly
+            .createdAt(LocalDateTime.now())
+            .build();
 
         Notification saved = notificationRepository.save(notification);
 
-        // 🔥 REAL-TIME WEBSOCKET SEND
+        // Real-time push
         messagingTemplate.convertAndSendToUser(
                 userId.toString(),
                 "/queue/notifications",
@@ -61,15 +59,14 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    @Transactional
+    public long countUnreadNotifications(UUID userId) {
+        return notificationRepository.countByUserIdAndIsReadFalse(userId);
+    }
+
+    @Override
     public void markAllAsRead(UUID userId) {
         List<Notification> notifications = notificationRepository.findByUserId(userId);
         notifications.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(notifications);
-    }
-
-    @Override
-    public long countUnreadNotifications(UUID userId) {
-        return notificationRepository.countByUserIdAndIsReadFalse(userId);
     }
 }

@@ -62,7 +62,7 @@ public class DonationRequestServiceImpl implements DonationRequestService {
 
         DonationRequest saved = requestRepository.save(request);
 
-        // 🔔 NOTIFY DONOR (REAL-TIME)
+        //  NOTIFY DONOR (REAL-TIME)
         notificationService.createNotification(
                 donation.getDonor().getId(),
                 "DONOR",
@@ -92,15 +92,14 @@ public class DonationRequestServiceImpl implements DonationRequestService {
     // =========================
     // GET REQUESTS FOR MY DONATIONS (OWNER)
     // =========================
-    @Override
-    public List<RequestResponse> getRequestsForMyDonations(String email) {
-
-        return requestRepository.findAll()
-                .stream()
-                .filter(req -> req.getDonation().getDonor().getEmail().equalsIgnoreCase(email))
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
+ @Override
+public List<RequestResponse> getRequestsForMyDonations(String email) {
+    // FIX: Don't use findAll(). Use the specific query:
+    return requestRepository.findByDonationDonorEmailIgnoreCase(email)
+            .stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+}
 
     // =========================
     // UPDATE REQUEST STATUS
@@ -114,7 +113,7 @@ public class DonationRequestServiceImpl implements DonationRequestService {
         DonationRequest req = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
-        // ❌ only owner can update
+        //  only owner can update
         if (!req.getDonation().getDonor().getEmail().equalsIgnoreCase(currentUserEmail)) {
             throw new RuntimeException("Unauthorized access");
         }
@@ -124,7 +123,7 @@ public class DonationRequestServiceImpl implements DonationRequestService {
 
         Donation donation = req.getDonation();
 
-        // ✅ if approved → reserve item
+        //  if approved → reserve item
         if ("APPROVED".equals(normalizedStatus)) {
             donation.setStatus("RESERVED");
         }
@@ -132,7 +131,7 @@ public class DonationRequestServiceImpl implements DonationRequestService {
         donationRepository.save(donation);
         DonationRequest updated = requestRepository.save(req);
 
-        // 🔔 NOTIFY REQUESTER
+        // NOTIFY REQUESTER
         String title = "Request " + normalizedStatus;
         String message = "APPROVED".equals(normalizedStatus)
                 ? "Your request has been approved 🎉"
@@ -152,20 +151,19 @@ public class DonationRequestServiceImpl implements DonationRequestService {
     // =========================
     // MAP RESPONSE
     // =========================
-    private RequestResponse mapToResponse(DonationRequest req) {
-        return RequestResponse.builder()
-                .id(req.getId())
-                .donationTitle(req.getDonation().getTitle())
-                .status(req.getStatus())
-                .createdAt(req.getCreatedAt())
-                .requesterId(req.getRequester().getId())
-                .requesterName(req.getRequester().getFullName())
-                .requesterPhone(req.getRequester().getPhone())
-                .requesterAvatar(req.getRequester().getAvatarUrl())
-                .donorId(req.getDonation().getDonor().getId())
-                .donorName(req.getDonation().getDonor().getFullName())
-                .donorPhone(req.getDonation().getDonor().getPhone())
-                .donorAvatar(req.getDonation().getDonor().getAvatarUrl())
-                .build();
-    }
+
+private RequestResponse mapToResponse(DonationRequest req) {
+    return RequestResponse.builder()
+            .id(req.getId())
+            .donationId(req.getDonation().getId())
+            .donationTitle(req.getDonation().getTitle())
+            .requesterName(req.getRequester().getFullName())
+            .requesterPhone(req.getRequester().getPhone()) // Map requester phone
+            .donorName(req.getDonation().getDonor().getFullName()) // Map donor name
+            .donorPhone(req.getDonation().getDonor().getPhone())   // Map donor phone
+            .status(req.getStatus())
+            .message(req.getMessage())
+            .createdAt(req.getCreatedAt())
+            .build();
+}
 }

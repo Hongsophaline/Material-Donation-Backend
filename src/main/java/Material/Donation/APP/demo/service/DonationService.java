@@ -27,4 +27,6 @@ public interface DonationService {
     // ✅ ADD THIS METHOD
     // =========================
     DonationResponse getDonationById(UUID id);
+
+    Object search(String keyword, UUID categoryId);
 }
